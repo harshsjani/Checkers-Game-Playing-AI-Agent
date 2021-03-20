@@ -18,10 +18,10 @@ public:
     static string input_path;
     static string output_path;
 
-    const static char white_man = 'w';
-    const static char black_man = 'b';
-    const static char white_king = 'W';
-    const static char black_king = 'B';
+    const static char white_man;
+    const static char black_man;
+    const static char white_king;
+    const static char black_king;
 
     static map<char, vector<pair<int, int>>> directions;
 
@@ -51,6 +51,11 @@ char Constants::col_labels[8] =  {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
 int Constants::row_labels[8] =  {8, 7, 6, 5, 4, 3, 2, 1};
 string Constants::input_path = "input.txt";
 string Constants::output_path = "output.txt";
+
+const char Constants::white_man = 'w';
+const char Constants::black_man = 'b';
+const char Constants::white_king = 'W';
+const char Constants::black_king = 'B';
 
 map<char, vector<pair<int, int>>> Constants::directions = {
     {Constants::white_man, {{-1, -1}, {-1, 1}}},
@@ -141,6 +146,15 @@ public:
         board.squares[final_x][final_y] = Piece(Constants::unoccupied_square);
         board.squares[start_x][start_y] = piece;
     }
+
+    void write_to_output() {
+        ofstream output_file;
+        output_file.open(Constants::output_path);
+
+        cout << "E" << start_x << start_y << endl;
+
+        output_file.close();
+    }
 };
 
 class Capture {
@@ -190,6 +204,17 @@ public:
             it->execute_capture(board);    
     }
 
+    void write_to_output() {
+        ofstream output_file;
+        output_file.open(Constants::output_path);
+
+        for (auto capture: captureSequence) {
+            cout << "J " << capture.captured_x << capture.captured_y << endl;
+        }
+
+        output_file.close();
+    }
+
     vector<Capture> captureSequence;
 };
 
@@ -233,6 +258,8 @@ public:
                 board.squares[i][j] = Piece(line[j]);
             }
         }
+
+        input_file.close();
     }
 
     void write_board() {
@@ -405,8 +432,8 @@ public:
         return v;
     }
 
-    pair<CaptureSequence, Move> alphabeta_search(Color playing_color, int depth = 0) {
-        auto items = get_all_moves(playing_color);
+    pair<CaptureSequence, Move> alphabeta_search() {
+        auto items = get_all_moves(playerColor);
         int val = -Constants::INF;
 
         pair<CaptureSequence, Move> final_move;
@@ -461,5 +488,11 @@ int main() {
     Checkers game = Checkers();
     game.read_board();
     
-    
+    pair<CaptureSequence, Move> move = game.alphabeta_search();
+
+    if (move.first.captureSequence.size() > 0) {
+        move.first.write_to_output();
+    } else {
+        move.second.write_to_output();
+    }
 }
