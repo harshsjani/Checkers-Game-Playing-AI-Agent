@@ -25,7 +25,7 @@ public:
 
     static map<char, vector<pair<int, int>>> directions;
 
-    const static int max_depth = 12;
+    const static int max_depth = 20;
 
     const static int INF = 1000000000;
 };
@@ -119,8 +119,8 @@ public:
     Move (int x, int y, int p, int q, Piece& the_piece) {
         start_x = x;
         start_y = y;
-        final_x = x;
-        final_y = y;
+        final_x = p;
+        final_y = q;
         piece = piece;
     }
 
@@ -151,7 +151,7 @@ public:
         ofstream output_file;
         output_file.open(Constants::output_path);
 
-        cout << "E" << start_x << start_y << endl;
+        output_file << "E " << Constants::col_labels[start_y] << Constants::row_labels[start_x] << " " << Constants::col_labels[final_y] << Constants::row_labels[final_x];
 
         output_file.close();
     }
@@ -209,7 +209,7 @@ public:
         output_file.open(Constants::output_path);
 
         for (auto capture: captureSequence) {
-            cout << "J " << capture.captured_x << capture.captured_y << endl;
+            output_file << "J " << Constants::col_labels[capture.start_y] << Constants::row_labels[capture.start_x] << " " << Constants::col_labels[capture.final_y] << Constants::row_labels[capture.final_x] << endl;
         }
 
         output_file.close();
@@ -272,7 +272,7 @@ public:
     }
 
     bool in_bounds(int x, int y) {
-        return 0 <= x < Constants::num_rows && 0 <= y < Constants::num_cols;
+        return 0 <= x  && x < Constants::num_rows && 0 <= y && y < Constants::num_cols;
     }
 
     bool is_valid_capture(int x, int y, int p, int q, Piece piece) {
@@ -293,7 +293,7 @@ public:
             int q = d_pair.second + cy;
 
             if (in_bounds(p, q)) {
-                if (board.squares[p][q].color ^ piece.color == 1 && is_valid_capture(cx, cy, p, q, piece)) {
+                if ((board.squares[p][q].color ^ piece.color) == 1 && is_valid_capture(cx, cy, p, q, piece)) {
                     int post_jump_x = cx < p ? p + 1 : p - 1;
                     int post_jump_y = cy < q ? q + 1 : q - 1;
 
@@ -466,6 +466,7 @@ public:
             }
         }
 
+        cout << "Eval: " << val << endl;
         return final_move;
     }
 
