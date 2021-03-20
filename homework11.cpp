@@ -24,6 +24,10 @@ public:
     const static char black_king = 'B';
 
     static map<char, vector<pair<int, int>>> directions;
+
+    const static int max_depth = 12;
+
+    const static int INF = 1000000000;
 };
 
 enum GameType {
@@ -103,8 +107,18 @@ public:
 class Move {
     int start_x, start_y;
     int final_x, final_y;
+    Piece piece;
 
 public:
+    Move () {}
+    Move (int x, int y, int p, int q, Piece& the_piece) {
+        start_x = x;
+        start_y = y;
+        final_x = x;
+        final_y = y;
+        piece = piece;
+    }
+
     static void promote_if_possible(Board& board, Piece piece, int x, int y) {
         if (piece.type == MAN) {
             if (piece.color == BLACK) {
@@ -115,6 +129,17 @@ public:
                     board.squares[x][y] = Piece(Constants::white_king);
             }
         }
+    }
+
+    void execute(Board& board) {
+        board.squares[final_x][final_y] = piece;
+        board.squares[start_x][start_y] = Piece(Constants::unoccupied_square);
+        promote_if_possible(board, piece, final_x, final_y);
+    }
+
+    void undo(Board& board) {
+        board.squares[final_x][final_y] = Piece(Constants::unoccupied_square);
+        board.squares[start_x][start_y] = piece;
     }
 };
 
@@ -154,8 +179,15 @@ public:
 
 class CaptureSequence : Move {
 public:
-    CaptureSequence() {
+    void execute(Board& board) {
+        for (auto capture: captureSequence) {
+            capture.execute_capture(board);
+        }
+    }
 
+    void undo(Board& board) {
+        for (auto it = captureSequence.rbegin(); it != captureSequence.rend(); ++it)
+            it->execute_capture(board);    
     }
 
     vector<Capture> captureSequence;
@@ -164,6 +196,7 @@ public:
 class Checkers {
     GameType gameType;
     Color playerColor;
+    Color enemyColor;
     float playTime;
     Board board;
 
@@ -186,6 +219,7 @@ public:
 
         getline(input_file, line);
         playerColor = (line == "BLACK") ? Color::BLACK : Color::WHITE;
+        enemyColor = (line == "BLACK") ? Color::WHITE : Color::BLACK;
 
         getline(input_file, line);
         playTime = stof(line);
@@ -237,24 +271,33 @@ public:
                     int post_jump_y = cy < q ? q + 1 : q - 1;
 
                     Capture capture = Capture(cx, cy, p, q, post_jump_x, post_jump_y, piece, board.squares[p][q]);
+                    CaptureSequence cs = CaptureSequence();
+                    cs.captureSequence.push_back(capture);
 
                     capture.execute_capture(board);
 
                     auto moves = get_piece_moves(piece, post_jump_x, post_jump_y, true);
 
                     for (auto capSeq : moves.first) {
-                        CaptureSequence cs = CaptureSequence();
-                        cs.captureSequence.push_back(capture);
-                        cs.captureSequence.insert(cs.captureSequence.begin(), capSeq.captureSequence.begin(), capSeq.captureSequence.end());
+                        capSeq.captureSequence.insert(capSeq.captureSequence.begin(), capture);
+                        capture_sequences.push_back(capSeq);
                     }
 
                     capture.undo_capture(board);
+
+                    if (moves.first.size() == 0)
+                        capture_sequences.push_back(cs);
+                }
+                else if (capture_sequences.size() == 0 && !only_jumps && board.squares[p][q].type == BLANK) {
+                    moves.push_back(Move(cx, cy, p, q, piece));
                 }
             }
         }
+
+        return make_pair(capture_sequences, moves);
     }
 
-    vector<Move> get_all_moves (Color playing_color) {
+    pair<vector<CaptureSequence>, vector<Move>> get_all_moves (Color playing_color) {
         vector<CaptureSequence> capture_sequences;
         vector<Move> moves;
 
@@ -263,13 +306,143 @@ public:
                 Piece piece = board.squares[i][j];
 
                 if (piece.type != BLANK && piece.color == playing_color) {
+                    auto piece_moves = get_piece_moves(piece, i, j);
 
+                    if (piece_moves.first.size() > 0) {
+                        capture_sequences.insert(capture_sequences.begin(), piece_moves.first.begin(), piece_moves.first.end());
+                    }
+                    else if (piece_moves.second.size() > 0) {
+                        moves.insert(moves.begin(), piece_moves.second.begin(), piece_moves.second.end());
+                    }
                 }
             }
         }
+
+        return make_pair(capture_sequences, moves);
     }
 
-    int eval() {
+    int max_value(Color playing_color, int alpha, int beta, int depth) {
+        if (depth >= Constants::max_depth)
+            return eval(playing_color);
+        
+        int v = -Constants::INF;
+
+        auto items = get_all_moves(playing_color);
+
+        if (items.first.size() > 0) {
+            for (auto captureSeq : items.first) {
+                captureSeq.execute(board);
+
+                v = max(v, min_value(enemyColor, alpha, beta, depth + 1));
+
+                if (v >= beta)
+                    return v;
+
+                alpha = max(alpha, v);
+
+                captureSeq.undo(board);
+            }
+        } else if (items.second.size() > 0) {
+            for (auto move: items.second) {
+                move.execute(board);
+
+                v = max(v, min_value(enemyColor, alpha, beta, depth + 1));
+
+                if (v >= beta)
+                    return v;
+
+                alpha = max(alpha, v);
+
+                move.undo(board);
+            }
+        } else {
+            // No valid moves
+            return -Constants::INF;
+        }
+
+        return v;
+    }
+
+    int min_value(Color playing_color, int alpha, int beta, int depth) {
+        if (depth >= Constants::max_depth)
+            return eval(playing_color);
+
+        int v = Constants::INF;
+
+        auto items = get_all_moves(playing_color);
+
+        if (items.first.size() > 0) {
+            for (auto captureSeq : items.first) {
+                captureSeq.execute(board);
+
+                v = min(v, max_value(playerColor, alpha, beta, depth + 1));
+
+                if (v <= alpha)
+                    return v;
+
+                beta = min(beta, v);
+
+                captureSeq.undo(board);
+            }
+        } else if (items.second.size() > 0) {
+            for (auto move: items.second) {
+                move.execute(board);
+
+                v = min(v, max_value(playerColor, alpha, beta, depth + 1));
+
+                if (v <= alpha)
+                    return v;
+
+                beta = min(beta, v);
+                
+                move.undo(board);
+            }
+        } else {
+            // No valid moves
+            return Constants::INF;
+        }
+
+        return v;
+    }
+
+    pair<CaptureSequence, Move> alphabeta_search(Color playing_color, int depth = 0) {
+        auto items = get_all_moves(playing_color);
+        int val = -Constants::INF;
+
+        pair<CaptureSequence, Move> final_move;
+
+        if (items.first.size() > 0) {
+            for (auto captureSeq : items.first) {
+                captureSeq.execute(board);
+
+                int abv = min_value(enemyColor, -Constants::INF, Constants::INF, 1);
+
+                if (abv >= val) {
+                    val = abv;
+                    final_move.first = captureSeq;
+                }
+
+                captureSeq.undo(board);
+            }
+        } else {
+            for (auto move: items.second) {
+                move.execute(board);
+
+                int abv = min_value(enemyColor, -Constants::INF, Constants::INF, 1);
+
+                if (abv >= val) {
+                    val = abv;
+                    final_move.second = move;
+                }
+
+                move.undo(board);
+            }
+        }
+
+        return final_move;
+    }
+
+    int eval(Color playing_color) {
         map<char, int> counts;
         for (int i = 0; i < Constants::num_rows; ++i) {
             for (int j = 0; j < Constants::num_cols; ++j) {
@@ -280,12 +453,13 @@ public:
         int val = counts[Constants::white_man] + counts[Constants::white_king]
                     - counts[Constants::black_man] - counts[Constants::black_king];
         
-        return val;
+        return playing_color == BLACK ? -val : val;
     }
 };
 
 int main() {
     Checkers game = Checkers();
     game.read_board();
-    game.write_board();
+    
+    
 }
