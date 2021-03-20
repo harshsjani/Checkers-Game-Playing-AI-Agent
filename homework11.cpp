@@ -25,7 +25,7 @@ public:
 
     static map<char, vector<pair<int, int>>> directions;
 
-    const static int max_depth = 10;
+    const static int max_depth = 12;
 
     const static int INF = 36001;
 };
@@ -160,8 +160,6 @@ public:
         ofstream output_file;
         output_file.open(Constants::output_path);
 
-        cout << "E " << Constants::col_labels[start_y] << Constants::row_labels[start_x] << " " << Constants::col_labels[final_y] << Constants::row_labels[final_x] << endl;
-
         output_file << "E " << Constants::col_labels[start_y] << Constants::row_labels[start_x] << " " << Constants::col_labels[final_y] << Constants::row_labels[final_x];
 
         output_file.close();
@@ -220,7 +218,6 @@ public:
         output_file.open(Constants::output_path);
 
         for (auto capture: captureSequence) {
-            cout << "J " << Constants::col_labels[capture.start_y] << Constants::row_labels[capture.start_x] << " " << Constants::col_labels[capture.final_y] << Constants::row_labels[capture.final_x] << endl;
             output_file << "J " << Constants::col_labels[capture.start_y] << Constants::row_labels[capture.start_x] << " " << Constants::col_labels[capture.final_y] << Constants::row_labels[capture.final_x] << endl;
         }
 
