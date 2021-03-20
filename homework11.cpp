@@ -25,7 +25,7 @@ public:
 
     static map<char, vector<pair<int, int>>> directions;
 
-    const static int max_depth = 12;
+    const static int max_depth = 14;
 
     const static int INF = 36001;
 };
@@ -284,7 +284,7 @@ public:
         return false;
     }
 
-    pair<vector<CaptureSequence>, vector<Move>> get_piece_moves(Piece piece, int cx, int cy, bool only_jumps=false) {
+    pair<vector<CaptureSequence>, vector<Move>>* get_piece_moves(Piece piece, int cx, int cy, bool only_jumps=false) {
         vector<CaptureSequence> capture_sequences;
         vector<Move> moves;
 
@@ -305,14 +305,14 @@ public:
 
                     auto moves = get_piece_moves(piece, post_jump_x, post_jump_y, true);
 
-                    for (auto capSeq : moves.first) {
+                    for (auto capSeq : moves->first) {
                         capSeq.captureSequence.insert(capSeq.captureSequence.begin(), capture);
                         capture_sequences.push_back(capSeq);
                     }
 
                     capture.undo_capture(board);
 
-                    if (moves.first.size() == 0)
+                    if (moves->first.size() == 0)
                         capture_sequences.push_back(cs);
                 }
                 else if (capture_sequences.size() == 0 && !only_jumps && board.squares[p][q].type == BLANK) {
@@ -321,10 +321,14 @@ public:
             }
         }
 
-        return make_pair(capture_sequences, moves);
+        pair<vector<CaptureSequence>, vector<Move>>* pr = new pair<vector<CaptureSequence>, vector<Move>>();
+        pr->first = capture_sequences;
+        pr->second = moves;
+        return pr;
+        //return &make_pair(capture_sequences, moves);
     }
 
-    pair<vector<CaptureSequence>, vector<Move>> get_all_moves (Color playing_color) {
+    pair<vector<CaptureSequence>, vector<Move>>* get_all_moves (Color playing_color) {
         vector<CaptureSequence> capture_sequences;
         vector<Move> moves;
 
@@ -335,17 +339,22 @@ public:
                 if (piece.type != BLANK && piece.color == playing_color) {
                     auto piece_moves = get_piece_moves(piece, i, j);
 
-                    if (piece_moves.first.size() > 0) {
-                        capture_sequences.insert(capture_sequences.begin(), piece_moves.first.begin(), piece_moves.first.end());
+                    if (piece_moves->first.size() > 0) {
+                        capture_sequences.insert(capture_sequences.begin(), piece_moves->first.begin(), piece_moves->first.end());
                     }
-                    else if (piece_moves.second.size() > 0) {
-                        moves.insert(moves.begin(), piece_moves.second.begin(), piece_moves.second.end());
+                    else if (piece_moves->second.size() > 0) {
+                        moves.insert(moves.begin(), piece_moves->second.begin(), piece_moves->second.end());
                     }
                 }
             }
         }
 
-        return make_pair(capture_sequences, moves);
+        pair<vector<CaptureSequence>, vector<Move>>* pr = new pair<vector<CaptureSequence>, vector<Move>>();
+        pr->first = capture_sequences;
+        pr->second = moves;
+
+        return pr;
+        //return &make_pair(capture_sequences, moves);
     }
 
     int max_value(Color playing_color, int alpha, int beta, int depth) {
@@ -356,8 +365,8 @@ public:
 
         auto items = get_all_moves(playing_color);
 
-        if (items.first.size() > 0) {
-            for (auto captureSeq : items.first) {
+        if (items->first.size() > 0) {
+            for (auto captureSeq : items->first) {
                 captureSeq.execute(board);
 
                 v = max(v, min_value(enemyColor, alpha, beta, depth + 1));
@@ -371,8 +380,8 @@ public:
 
                 captureSeq.undo(board);
             }
-        } else if (items.second.size() > 0) {
-            for (auto move: items.second) {
+        } else if (items->second.size() > 0) {
+            for (auto move: items->second) {
                 move.execute(board);
 
                 v = max(v, min_value(enemyColor, alpha, beta, depth + 1));
@@ -403,8 +412,8 @@ public:
 
         auto items = get_all_moves(playing_color);
 
-        if (items.first.size() > 0) {
-            for (auto captureSeq : items.first) {
+        if (items->first.size() > 0) {
+            for (auto captureSeq : items->first) {
                 captureSeq.execute(board);
 
                 v = min(v, max_value(playerColor, alpha, beta, depth + 1));
@@ -418,8 +427,8 @@ public:
 
                 captureSeq.undo(board);
             }
-        } else if (items.second.size() > 0) {
-            for (auto move: items.second) {
+        } else if (items->second.size() > 0) {
+            for (auto move: items->second) {
                 move.execute(board);
 
                 v = min(v, max_value(playerColor, alpha, beta, depth + 1));
@@ -441,34 +450,34 @@ public:
         return v;
     }
 
-    pair<CaptureSequence, Move> alphabeta_search() {
+    pair<CaptureSequence, Move>* alphabeta_search() {
         auto items = get_all_moves(playerColor);
         int val = -Constants::INF;
 
-        pair<CaptureSequence, Move> final_move;
+        pair<CaptureSequence, Move>* final_move = new pair<CaptureSequence, Move>();
 
-        if (items.first.size() > 0) {
-            for (auto captureSeq : items.first) {
+        if (items->first.size() > 0) {
+            for (auto captureSeq : items->first) {
                 captureSeq.execute(board);
 
                 int abv = min_value(enemyColor, -Constants::INF, Constants::INF, 1);
 
                 if (abv >= val) {
                     val = abv;
-                    final_move.first = captureSeq;
+                    final_move->first = captureSeq;
                 }
 
                 captureSeq.undo(board);
             }
         } else {
-            for (auto move: items.second) {
+            for (auto move: items->second) {
                 move.execute(board);
 
                 int abv = min_value(enemyColor, -Constants::INF, Constants::INF, 1);
 
                 if (abv >= val) {
                     val = abv;
-                    final_move.second = move;
+                    final_move->second = move;
                 }
 
                 move.undo(board);
@@ -498,11 +507,11 @@ int main() {
     Checkers game = Checkers();
     game.read_board();
     
-    pair<CaptureSequence, Move> move = game.alphabeta_search();
+    pair<CaptureSequence, Move>* move = game.alphabeta_search();
 
-    if (move.first.captureSequence.size() > 0) {
-        move.first.write_to_output();
+    if (move->first.captureSequence.size() > 0) {
+        move->first.write_to_output();
     } else {
-        move.second.write_to_output();
+        move->second.write_to_output();
     }
 }
