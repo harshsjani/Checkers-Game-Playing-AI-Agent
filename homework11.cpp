@@ -25,9 +25,9 @@ public:
 
     static map<char, vector<pair<int, int>>> directions;
 
-    const static int max_depth = 20;
+    const static int max_depth = 10;
 
-    const static int INF = 1000000000;
+    const static int INF = 36001;
 };
 
 enum GameType {
@@ -107,6 +107,15 @@ public:
 class Board {
 public:
     Piece squares[8][8];
+
+    void write_board() {
+        for (int i = 0; i < Constants::num_rows; ++i) {
+            for (int j = 0; j < Constants::num_cols; ++j) {
+                cout << squares[i][j].get_char() << " ";
+            }
+            cout << endl;
+        }
+    }
 };
 
 class Move {
@@ -121,7 +130,7 @@ public:
         start_y = y;
         final_x = p;
         final_y = q;
-        piece = piece;
+        piece = the_piece;
     }
 
     static void promote_if_possible(Board& board, Piece piece, int x, int y) {
@@ -143,13 +152,15 @@ public:
     }
 
     void undo(Board& board) {
-        board.squares[final_x][final_y] = Piece(Constants::unoccupied_square);
         board.squares[start_x][start_y] = piece;
+        board.squares[final_x][final_y] = Piece(Constants::unoccupied_square);
     }
 
     void write_to_output() {
         ofstream output_file;
         output_file.open(Constants::output_path);
+
+        cout << "E " << Constants::col_labels[start_y] << Constants::row_labels[start_x] << " " << Constants::col_labels[final_y] << Constants::row_labels[final_x] << endl;
 
         output_file << "E " << Constants::col_labels[start_y] << Constants::row_labels[start_x] << " " << Constants::col_labels[final_y] << Constants::row_labels[final_x];
 
@@ -171,9 +182,9 @@ public:
     }
 
     void execute_capture(Board& board) {
+        board.squares[final_x][final_y] = capturing_piece;
         board.squares[start_x][start_y] = Piece(Constants::unoccupied_square);
         board.squares[captured_x][captured_y] = Piece(Constants::unoccupied_square);
-        board.squares[final_x][final_y] = capturing_piece;
 
         Move::promote_if_possible(board, capturing_piece, final_x, final_y);
     }
@@ -201,7 +212,7 @@ public:
 
     void undo(Board& board) {
         for (auto it = captureSequence.rbegin(); it != captureSequence.rend(); ++it)
-            it->execute_capture(board);    
+            it->undo_capture(board);
     }
 
     void write_to_output() {
@@ -209,6 +220,7 @@ public:
         output_file.open(Constants::output_path);
 
         for (auto capture: captureSequence) {
+            cout << "J " << Constants::col_labels[capture.start_y] << Constants::row_labels[capture.start_x] << " " << Constants::col_labels[capture.final_y] << Constants::row_labels[capture.final_x] << endl;
             output_file << "J " << Constants::col_labels[capture.start_y] << Constants::row_labels[capture.start_x] << " " << Constants::col_labels[capture.final_y] << Constants::row_labels[capture.final_x] << endl;
         }
 
@@ -260,15 +272,6 @@ public:
         }
 
         input_file.close();
-    }
-
-    void write_board() {
-        for (int i = 0; i < Constants::num_rows; ++i) {
-            for (int j = 0; j < Constants::num_cols; ++j) {
-                cout << board.squares[i][j].get_char() << " ";
-            }
-            cout << endl;
-        }
     }
 
     bool in_bounds(int x, int y) {
@@ -362,8 +365,10 @@ public:
 
                 v = max(v, min_value(enemyColor, alpha, beta, depth + 1));
 
-                if (v >= beta)
+                if (v >= beta) {
+                    captureSeq.undo(board);
                     return v;
+                }
 
                 alpha = max(alpha, v);
 
@@ -375,8 +380,10 @@ public:
 
                 v = max(v, min_value(enemyColor, alpha, beta, depth + 1));
 
-                if (v >= beta)
+                if (v >= beta) {
+                    move.undo(board);
                     return v;
+                }
 
                 alpha = max(alpha, v);
 
@@ -391,8 +398,9 @@ public:
     }
 
     int min_value(Color playing_color, int alpha, int beta, int depth) {
-        if (depth >= Constants::max_depth)
+        if (depth >= Constants::max_depth) {
             return eval(playing_color);
+        }
 
         int v = Constants::INF;
 
@@ -404,8 +412,10 @@ public:
 
                 v = min(v, max_value(playerColor, alpha, beta, depth + 1));
 
-                if (v <= alpha)
+                if (v <= alpha) {
+                    captureSeq.undo(board);
                     return v;
+                }
 
                 beta = min(beta, v);
 
@@ -417,8 +427,10 @@ public:
 
                 v = min(v, max_value(playerColor, alpha, beta, depth + 1));
 
-                if (v <= alpha)
+                if (v <= alpha) {
+                    move.undo(board);
                     return v;
+                }
 
                 beta = min(beta, v);
                 
@@ -474,12 +486,12 @@ public:
         map<char, int> counts;
         for (int i = 0; i < Constants::num_rows; ++i) {
             for (int j = 0; j < Constants::num_cols; ++j) {
-                counts[board.squares[i][j].get_char()];
+                counts[board.squares[i][j].get_char()]++;
             }
         }
 
-        int val = counts[Constants::white_man] + counts[Constants::white_king]
-                    - counts[Constants::black_man] - counts[Constants::black_king];
+        int val = counts[Constants::white_man] * 100 + counts[Constants::white_king] * 150
+                    - counts[Constants::black_man] * 100 - counts[Constants::black_king] * 150;
         
         return playing_color == BLACK ? -val : val;
     }
