@@ -25,7 +25,7 @@ public:
 
     static map<char, vector<pair<int, int>>> directions;
 
-    const static int max_depth = 14;
+    const static int max_depth = 10;
 
     const static int INF = 36001;
 };
@@ -239,6 +239,7 @@ public:
         gameType = GameType::SINGLE;
         playerColor = Color::BLACK;
         playTime = 0.0;
+        evaluated_search_depth = 10;
     }
 
     void read_board() {
@@ -358,7 +359,7 @@ public:
     }
 
     int max_value(Color playing_color, int alpha, int beta, int depth) {
-        if (depth >= Constants::max_depth)
+        if (depth >= evaluated_search_depth)
             return eval(playing_color);
         
         int v = -Constants::INF;
@@ -404,7 +405,7 @@ public:
     }
 
     int min_value(Color playing_color, int alpha, int beta, int depth) {
-        if (depth >= Constants::max_depth) {
+        if (depth >= evaluated_search_depth) {
             return eval(playing_color);
         }
 
@@ -484,7 +485,6 @@ public:
             }
         }
 
-        cout << "Eval: " << val << endl;
         return final_move;
     }
 
@@ -501,11 +501,28 @@ public:
         
         return playing_color == BLACK ? -val : val;
     }
+
+    void set_search_depth() {
+        if (playTime < 5) {
+            evaluated_search_depth = 5;
+        } else if (playTime < 10) {
+            evaluated_search_depth = 6;
+        } else if (playTime < 30) {
+            evaluated_search_depth = 8;
+        } else if (playTime < 100) {
+            evaluated_search_depth = 9;
+        } else {
+            evaluated_search_depth = 11;
+        }
+    }
+
+    int evaluated_search_depth;
 };
 
 int main() {
     Checkers game = Checkers();
     game.read_board();
+    game.set_search_depth();
     
     pair<CaptureSequence, Move>* move = game.alphabeta_search();
 
