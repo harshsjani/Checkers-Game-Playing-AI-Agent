@@ -3,12 +3,9 @@
 #include <fstream>
 #include <vector>
 #include <map>
-#include <time.h>
-#include <chrono>
 
 
 using namespace std;
-using namespace chrono;
 
 class Constants {
 public:
@@ -515,7 +512,7 @@ public:
         } else if (playTime < 100) {
             evaluated_search_depth = 9;
         } else {
-            evaluated_search_depth = 11;
+            evaluated_search_depth = 12;
         }
     }
 
@@ -525,13 +522,7 @@ public:
 int main() {
     Checkers game = Checkers();
 
-    auto start_time = high_resolution_clock::now();
-
     game.read_board();
-
-    auto stop_time = high_resolution_clock::now();
-    auto duration = duration_cast<microseconds>(stop_time - start_time);
-    cout << "Time taken to read board: " <<  duration.count() << endl;
     game.set_search_depth();
     
     pair<CaptureSequence, Move>* move = game.alphabeta_search();
