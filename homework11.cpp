@@ -3,9 +3,12 @@
 #include <fstream>
 #include <vector>
 #include <map>
+#include <time.h>
+#include <chrono>
 
 
 using namespace std;
+using namespace chrono;
 
 class Constants {
 public:
@@ -521,7 +524,14 @@ public:
 
 int main() {
     Checkers game = Checkers();
+
+    auto start_time = high_resolution_clock::now();
+
     game.read_board();
+
+    auto stop_time = high_resolution_clock::now();
+    auto duration = duration_cast<microseconds>(stop_time - start_time);
+    cout << "Time taken to read board: " <<  duration.count() << endl;
     game.set_search_depth();
     
     pair<CaptureSequence, Move>* move = game.alphabeta_search();

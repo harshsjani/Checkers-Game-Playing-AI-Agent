@@ -73,7 +73,7 @@ color_names = ["BLACK", "WHITE"]
 init_color = 0
 movec = 0
 
-agents = [agent2, agent1]
+agents = [agent1, agent2]
 moves_without_capture = 0
 max_moves_without_capture = 50
 curagent = 0
