@@ -1,5 +1,6 @@
 import os, shutil, sys
 import subprocess
+import time
 
 x_indices = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
 y_indices = [8, 7, 6, 5, 4, 3, 2, 1]
@@ -20,7 +21,7 @@ def print_board(board):
         print(row)
 
 def call_agent(agent):
-    subprocess.run(agent)
+    subprocess.run(agent, shell=True)
 
 def check_game_end(color):
     bp = wp = 0
@@ -61,8 +62,10 @@ def do_jump(board, jump):
     elif p == 0 and board[p][q] == "w":
         board[p][q] = "W"
 
-agent1 = "./homework"
-agent2 = "./homework_minimax"
+agent1 = "./homework11"
+# agent1 = "python3 ./agent_v/homework.py"
+agent2 = "python3 ./agent_k/homework.py"
+# agent2 = "./homework11_minimax"
 
 ipf = "input.txt"
 opf = "output.txt"
@@ -73,7 +76,8 @@ color_names = ["BLACK", "WHITE"]
 init_color = 0
 movec = 0
 
-agents = [agent1, agent2]
+agents = [agent2, agent1]
+times = [300.0, 300.0]
 moves_without_capture = 0
 max_moves_without_capture = 50
 curagent = 0
@@ -84,11 +88,19 @@ while True:
     with open(ipf, "w") as f:
         f.write("GAME\n")
         f.write(color_names[curagent] + "\n")
-        f.write("80.0\n")
+        f.write(str(times[curagent]) + "\n")
         rows = ["".join(row) for row in board]
         f.writelines("\n".join(rows))
     
+    start_time = time.time()
     call_agent(agents[curagent])
+    end_time = time.time()
+    time_taken = end_time - start_time
+    print("Time taken on this move: {0}".format(time_taken))
+    times[curagent] -= time_taken
+
+    if times[curagent] <= 0:
+        print("TIME LIMIT EXCEEDED for {0}".format(agents[curagent]))
 
     with open(opf) as f:
         lines = f.readlines()
