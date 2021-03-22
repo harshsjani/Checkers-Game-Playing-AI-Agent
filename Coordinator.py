@@ -63,8 +63,8 @@ def do_jump(board, jump):
         board[p][q] = "W"
 
 agent1 = "./homework11"
-# agent1 = "python3 ./agent_v/homework.py"
-agent2 = "python3 ./agent_k/homework.py"
+agent2 = "python3 ./agent_v/homework.py"
+# agent2 = "python3 ./agent_k/homework.py"
 # agent2 = "./homework11_minimax"
 
 ipf = "input.txt"

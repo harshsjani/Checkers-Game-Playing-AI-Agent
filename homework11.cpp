@@ -31,7 +31,7 @@ public:
 
     constexpr static float INF = 36001;
 
-    constexpr static float eps = 4.97829, eks = 8.3137, ebr = 3.9281, emb = 2.7, emr = 0.4825, evn = -3.06, ept = 3.06;
+    constexpr static float eps = 4.97829, eks = 8.3137, ebr = 2.1281, emb = 0.88, emr = 0.4825, evn = -1.06, ept = 1.06;
 };
 
 enum GameType {
