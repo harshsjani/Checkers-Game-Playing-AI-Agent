@@ -640,4 +640,6 @@ int main() {
     } else {
         move->second.write_to_output();
     }
+
+    return 0;
 }
