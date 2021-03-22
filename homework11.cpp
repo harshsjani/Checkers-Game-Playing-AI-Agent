@@ -88,6 +88,7 @@ public:
     Piece () {
         type = BLANK;
         color = NONE;
+        chr = '.';
     }
 
     Piece(char rep) {
@@ -107,20 +108,12 @@ public:
             type = KING;
             color = BLACK;
         }
-    }
-
-    char get_char() {
-        if (type == BLANK)
-            return Constants::unoccupied_square;
-        if (type == MAN) {
-            return color == WHITE ? Constants::white_man : Constants::black_man;
-        } else {
-            return color == WHITE ? Constants::white_king : Constants::black_king;
-        }
+        chr = rep;
     }
 
     PieceType type;
     Color color;
+    char chr;
 };
 
 class Board {
@@ -130,7 +123,7 @@ public:
     void write_board() {
         for (int i = 0; i < Constants::num_rows; ++i) {
             for (int j = 0; j < Constants::num_cols; ++j) {
-                cout << squares[i][j].get_char() << " ";
+                cout << squares[i][j].chr << " ";
             }
             cout << endl;
         }
@@ -152,7 +145,7 @@ public:
         piece = the_piece;
     }
 
-    static void promote_if_possible(Board& board, Piece piece, int x, int y) {
+    static void promote_if_possible(Board& board, Piece& piece, int x, int y) {
         if (piece.type == MAN) {
             if (piece.color == BLACK) {
                 if (x == Constants::num_rows - 1)
@@ -187,7 +180,7 @@ public:
 
 class Capture {
 public:
-    Capture(int sx, int sy, int cx, int cy, int fx, int fy, Piece capturing, Piece captured) {
+    Capture(int sx, int sy, int cx, int cy, int fx, int fy, Piece& capturing, Piece& captured) {
         start_x = sx;
         start_y = sy;
         captured_x = cx;
@@ -300,20 +293,20 @@ public:
         return 0 <= x  && x < Constants::num_rows && 0 <= y && y < Constants::num_cols;
     }
 
-    bool is_valid_capture(int x, int y, int p, int q, Piece piece) {
+    bool is_valid_capture(int x, int y, int p, int q, Piece& piece) {
         int post_jump_x = x < p ? p + 1 : p - 1;
         int post_jump_y = y < q ? q + 1 : q - 1;
 
-        if (in_bounds(post_jump_x, post_jump_y) && board.squares[post_jump_x][post_jump_y].get_char() == Constants::unoccupied_square)
+        if (in_bounds(post_jump_x, post_jump_y) && board.squares[post_jump_x][post_jump_y].chr == Constants::unoccupied_square)
             return true;
         return false;
     }
 
-    pair<vector<CaptureSequence>, vector<Move>>* get_piece_moves(Piece piece, int cx, int cy, bool only_jumps=false) {
+    pair<vector<CaptureSequence>, vector<Move>>* get_piece_moves(Piece& piece, int cx, int cy, bool only_jumps=false) {
         vector<CaptureSequence> capture_sequences;
         vector<Move> moves;
 
-        for (auto d_pair : Constants::directions[piece.get_char()]) {
+        for (auto d_pair : Constants::directions[piece.chr]) {
             int p = d_pair.first + cx;
             int q = d_pair.second + cy;
 
@@ -505,17 +498,17 @@ public:
         return final_move;
     }
 
-    bool is_protected(Piece piece, int x, int y) {
-        for (auto d: Constants::protections[piece.get_char()]) {
+    bool is_protected(Piece& piece, int x, int y) {
+        for (auto d: Constants::protections[piece.chr]) {
             int p = x + d.first;
             int q = y + d.second;
 
             if (in_bounds(p, q)) {
-                if (piece.get_char() == Constants::white_man || piece.get_char() == Constants::white_king) {
-                    if (board.squares[p][q].get_char() == Constants::white_man || board.squares[p][q].get_char() == Constants::white_king)
+                if (piece.chr == Constants::white_man || piece.chr == Constants::white_king) {
+                    if (board.squares[p][q].chr == Constants::white_man || board.squares[p][q].chr == Constants::white_king)
                         return true;
-                } else if (piece.get_char() == Constants::black_man || piece.get_char() == Constants::black_king) {
-                    if (board.squares[p][q].get_char() == Constants::black_man || board.squares[p][q].get_char() == Constants::black_king)
+                } else if (piece.chr == Constants::black_man || piece.chr == Constants::black_king) {
+                    if (board.squares[p][q].chr == Constants::black_man || board.squares[p][q].chr == Constants::black_king)
                         return true;
                 }
             }
@@ -524,7 +517,7 @@ public:
         return false;
     }
 
-    bool is_vulnerable(Piece piece, int x, int y) {
+    bool is_vulnerable(Piece& piece, int x, int y) {
         if (x == 0 || x == 7 || y == 0 || y == 7)
             return false;
         for (auto d: Constants::protections[Constants::white_king]) { // Use all directions.
@@ -532,15 +525,15 @@ public:
             int q = y + d.second;
 
             if (in_bounds(p, q)) {
-                if (piece.get_char() == Constants::white_man || piece.get_char() == Constants::white_king) {
-                    if (board.squares[p][q].get_char() == Constants::black_king)
+                if (piece.chr == Constants::white_man || piece.chr == Constants::white_king) {
+                    if (board.squares[p][q].chr == Constants::black_king)
                         return true;
-                    else if (p < x && board.squares[p][q].get_char() == Constants::black_man)
+                    else if (p < x && board.squares[p][q].chr == Constants::black_man)
                         return true;
-                } else if (piece.get_char() == Constants::black_man || piece.get_char() == Constants::black_king) {
-                    if (board.squares[p][q].get_char() == Constants::white_king)
+                } else if (piece.chr == Constants::black_man || piece.chr == Constants::black_king) {
+                    if (board.squares[p][q].chr == Constants::white_king)
                         return true;
-                    else if (x < p && board.squares[p][q].get_char() == Constants::white_man)
+                    else if (x < p && board.squares[p][q].chr == Constants::white_man)
                         return true;
                 }
             }
@@ -558,7 +551,7 @@ public:
         
         for (int i = 0; i < Constants::num_rows; ++i) {
             for (int j = 0; j < Constants::num_cols; ++j) {
-                char chr = board.squares[i][j].get_char();
+                char chr = board.squares[i][j].chr;
 
                 if (chr == Constants::unoccupied_square)
                     continue;
