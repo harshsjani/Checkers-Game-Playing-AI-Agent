@@ -62,10 +62,9 @@ def do_jump(board, jump):
     elif p == 0 and board[p][q] == "w":
         board[p][q] = "W"
 
+agent2 = "python3 ./agent_k_final/homework.py"
 agent1 = "./homework11"
-agent2 = "python3 ./agent_v/homework.py"
-# agent2 = "python3 ./agent_k/homework.py"
-# agent2 = "./homework11_minimax"
+agent3 = "python3 ./agent_v/homework.py"
 
 ipf = "input.txt"
 opf = "output.txt"
@@ -76,7 +75,7 @@ color_names = ["BLACK", "WHITE"]
 init_color = 0
 movec = 0
 
-agents = [agent2, agent1]
+agents = [agent1, agent2]
 times = [300.0, 300.0]
 moves_without_capture = 0
 max_moves_without_capture = 50
@@ -101,6 +100,7 @@ while True:
 
     if times[curagent] <= 0:
         print("TIME LIMIT EXCEEDED for {0}".format(agents[curagent]))
+        break
 
     with open(opf) as f:
         lines = f.readlines()

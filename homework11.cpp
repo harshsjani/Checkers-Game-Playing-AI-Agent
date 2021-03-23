@@ -467,6 +467,10 @@ public:
         pair<CaptureSequence, Move>* final_move = new pair<CaptureSequence, Move>();
 
         if (items->first.size() > 0) {
+            if (items->first.size() == 1) {
+                final_move->first = items->first.at(0);
+                return final_move;
+            }
             for (auto captureSeq : items->first) {
                 captureSeq.execute(board);
 
@@ -494,7 +498,6 @@ public:
             }
         }
 
-        cout << "Eval :" << val << endl;
         return final_move;
     }
 
