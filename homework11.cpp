@@ -600,12 +600,12 @@ public:
                         + Constants::evn * (vulnerable_piece[Constants::black_man] + vulnerable_piece[Constants::black_king])
                         + Constants::ept * (protected_piece[Constants::black_man] + protected_piece[Constants::black_king]);
 
+        val = w_value - b_value;
+        
         if (counts[Constants::white_man] + counts[Constants::white_king] == 0)
             val = -Constants::INF;
         else if (counts[Constants::black_man] + counts[Constants::black_king] == 0)
             val = Constants::INF;
-        
-        val = w_value - b_value;
 
         return playing_color == BLACK ? -val : val;
     }
